@@ -1,4 +1,4 @@
-package middleware
+package router
 
 import (
 	"encoding/json"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sing3demons/users/constant"
 	"github.com/sing3demons/users/utils"
 	"github.com/sirupsen/logrus"
 )
@@ -20,15 +21,15 @@ func LoggingMiddleware() gin.HandlerFunc {
 		// Processing request
 		body, _ := io.ReadAll(ctx.Request.Body)
 		ctx.Request.Body = io.NopCloser(strings.NewReader(string(body)))
-		reqId := ctx.Writer.Header().Get("X-Request-Id")
+		reqId := ctx.Writer.Header().Get(constant.XSessionId)
 		if reqId == "" {
 			reqId = uuid.NewString()
-			ctx.Writer.Header().Set("X-Request-Id", reqId)
+			ctx.Writer.Header().Set(constant.XSessionId, reqId)
 		}
-		sessionId := ctx.Writer.Header().Get("X-Session-Id")
+
+		sessionId := ctx.Writer.Header().Get(constant.XSessionId)
 		if sessionId == "" {
-			sessionId = uuid.NewString()
-			ctx.Writer.Header().Set("X-Session-Id", sessionId)
+			ctx.Writer.Header().Set(constant.XSessionId, uuid.NewString())
 		}
 		ctx.Next()
 		// End Time request
@@ -49,7 +50,7 @@ func LoggingMiddleware() gin.HandlerFunc {
 			userID = ""
 		}
 
-		body_size := ctx.Writer.Size()
+		bodySize := ctx.Writer.Size()
 		// execution time
 		latencyTime := endTime.Sub(startTime)
 
@@ -67,7 +68,7 @@ func LoggingMiddleware() gin.HandlerFunc {
 			"latency":       latencyTime,
 			"error":         ctx.Errors.ByType(gin.ErrorTypePrivate).String(),
 			"request":       ctx.Request.PostForm.Encode(),
-			"body_size":     body_size,
+			"body_size":     bodySize,
 			"host":          host,
 			"protocol":      ctx.Request.Proto,
 			"path":          path,

@@ -15,6 +15,7 @@ import (
 	"github.com/sing3demons/users/handler"
 	"github.com/sing3demons/users/middleware"
 	"github.com/sing3demons/users/repository"
+	"github.com/sing3demons/users/router"
 	"github.com/sing3demons/users/service"
 	log "github.com/sirupsen/logrus"
 )
@@ -49,26 +50,29 @@ func main() {
 	userService := service.NewUserService(repo)
 	userHandler := handler.NewUserHandler(userService)
 
-	r := gin.New()
-	r.Use(gin.Recovery())
-	r.Use(middleware.LoggingMiddleware())
-
+	r := router.NewMicroservice()
+	// r.USE(middleware.LoggingMiddleware())
 	r.GET("/healthz", healthz)
-
 	r.POST("/auth/register", userHandler.Register)
 	r.POST("/auth/login", userHandler.Login)
 
-	r.GET("/profile", middleware.Authorization(), userHandler.GetProfile)
+	// Protected routes
+	{
+		r.USE(middleware.Authorization())
+		r.GET("/profile", userHandler.GetProfile)
+	}
 
-	runServer(r)
-
+	// Run server
+	r.StartHTTP()
 }
 
-func healthz(c *gin.Context) {
-	c.Status(http.StatusOK)
+func healthz(c router.IContext) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": "OK",
+	})
 }
 
-func runServer(router http.Handler) {
+func RunServer(router http.Handler) {
 	addr := os.Getenv("PORT")
 	if addr == "" {
 		log.Error("PORT not found")

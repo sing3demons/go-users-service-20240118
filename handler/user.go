@@ -3,15 +3,16 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/sing3demons/users/model"
+	"github.com/sing3demons/users/router"
 	"github.com/sing3demons/users/service"
 	"github.com/sing3demons/users/utils"
 	logger "github.com/sirupsen/logrus"
 )
 
 type IUserHandler interface {
-	Register(c *gin.Context)
-	Login(c *gin.Context)
-	GetProfile(c *gin.Context)
+	Register(c router.IContext)
+	Login(c router.IContext)
+	GetProfile(c router.IContext)
 }
 
 type userHandler struct {
@@ -22,11 +23,8 @@ func NewUserHandler(service service.IUserService) IUserHandler {
 	return &userHandler{service: service}
 }
 
-const xSessionId = "X-Session-Id"
-
-func (u *userHandler) GetProfile(c *gin.Context) {
-	sessionId := c.Writer.Header().Get(xSessionId)
-
+func (u *userHandler) GetProfile(c router.IContext) {
+	sessionId := c.GetSessionId()
 	userId, ok := c.Get("userId")
 	if !ok {
 		logger.WithFields(logger.Fields{
@@ -75,12 +73,12 @@ func (u *userHandler) GetProfile(c *gin.Context) {
 	})
 }
 
-func (u *userHandler) Register(c *gin.Context) {
-	sessionId := c.Writer.Header().Get(xSessionId)
+func (u *userHandler) Register(c router.IContext) {
+	sessionId := c.GetSessionId()
 
 	var body model.Register
 
-	if err := c.ShouldBindJSON(&body); err != nil {
+	if err := c.ReadBodyJSON(&body); err != nil {
 		logger.WithFields(logger.Fields{
 			"uuid":  sessionId,
 			"error": err.Error(),
@@ -131,11 +129,11 @@ func (u *userHandler) Register(c *gin.Context) {
 	})
 }
 
-func (u *userHandler) Login(c *gin.Context) {
-	sessionId := c.Writer.Header().Get(xSessionId)
+func (u *userHandler) Login(c router.IContext) {
+	sessionId := c.GetSessionId()
 	var body model.Login
 
-	if err := c.ShouldBindJSON(&body); err != nil {
+	if err := c.ReadBodyJSON(&body); err != nil {
 		logger.WithFields(logger.Fields{
 			"uuid":  sessionId,
 			"error": err.Error(),
